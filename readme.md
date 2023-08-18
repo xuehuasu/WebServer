@@ -17,18 +17,14 @@
 
 ```bash
 make
-make
 cd bin 
 ./server
 ```
 
 ## 压力测试
-![image-webbench]()
+![image-webbench](https://github.com/xuehuasu/xuehuasu/blob/f6224d094255ecde0e3bf0c607ab59a7d22a67ab/picture/WebServer/image-webbench.png)
 ```bash
-./webbench-1.5/webbench -c 100 -t 10 http://ip:port/
-./webbench-1.5/webbench -c 1000 -t 10 http://ip:port/
-./webbench-1.5/webbench -c 5000 -t 10 http://ip:port/
-./webbench-1.5/webbench -c 10000 -t 10 http://ip:port/
+./webbench-1.5/webbench -c clientNum -t Time http://ip:port/
 ```
 ## 项目目录
 ```bash

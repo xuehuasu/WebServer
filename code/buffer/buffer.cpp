@@ -1,58 +1,34 @@
 #include "buffer.h"
 
+/**
+ * @brief 构造函数
+ * @param initBuffSize 缓冲区大小
+ */
 Buffer::Buffer(int initBuffSize) : buffer_(initBuffSize), readPos_(0), writePos_(0) {}
 
+/**
+ * @brief 返回可读字节数
+ */
 size_t Buffer::ReadableBytes() const { return writePos_ - readPos_; }
+
+/**
+ * @brief 返回可写字节数
+ */
 size_t Buffer::WritableBytes() const { return buffer_.size() - writePos_; }
 
+/**
+ * @brief 返回预留空间字节数
+ */
 size_t Buffer::PrependableBytes() const { return readPos_; }
 
+/**
+ * @brief 返回缓冲区头指针
+ */
 const char* Buffer::Peek() const { return BeginPtr_() + readPos_; }
 
-void Buffer::Retrieve(size_t len) {
-  assert(len <= ReadableBytes());
-  readPos_ += len;
-}
-
-void Buffer::RetrieveUntil(const char* end) {
-  assert(Peek() <= end);
-  Retrieve(end - Peek());
-}
-
-void Buffer::RetrieveAll() {
-  bzero(&buffer_[0], buffer_.size());
-  readPos_ = 0;
-  writePos_ = 0;
-}
-
-std::string Buffer::RetrieveAllToStr() {
-  std::string str(Peek(), ReadableBytes());
-  RetrieveAll();
-  return str;
-}
-
-const char* Buffer::BeginWriteConst() const { return BeginPtr_() + writePos_; }
-
-char* Buffer::BeginWrite() { return BeginPtr_() + writePos_; }
-
-void Buffer::HasWritten(size_t len) { writePos_ += len; }
-
-void Buffer::Append(const std::string& str) { Append(str.data(), str.length()); }
-
-void Buffer::Append(const void* data, size_t len) {
-  assert(data);
-  Append(static_cast<const char*>(data), len);
-}
-
-void Buffer::Append(const char* str, size_t len) {
-  assert(str);
-  EnsureWriteable(len);
-  std::copy(str, str + len, BeginWrite());
-  HasWritten(len);
-}
-
-void Buffer::Append(const Buffer& buff) { Append(buff.Peek(), buff.ReadableBytes()); }
-
+/**
+ * @brief 确保缓冲区有足够的空间存放len个字节
+ */
 void Buffer::EnsureWriteable(size_t len) {
   if (WritableBytes() < len) {
     MakeSpace_(len);
@@ -60,6 +36,123 @@ void Buffer::EnsureWriteable(size_t len) {
   assert(WritableBytes() >= len);
 }
 
+/**
+ * @brief 返回可写指针
+ */
+char* Buffer::BeginWrite() { return BeginPtr_() + writePos_; }
+
+/**
+ * @brief 返回可读指针
+ */
+const char* Buffer::BeginWriteConst() const { return BeginPtr_() + writePos_; }
+
+/**
+ * @brief 从缓冲区中取出数据
+ * @param len 数据长度
+ */
+void Buffer::Retrieve(size_t len) {
+  assert(len <= ReadableBytes());
+  readPos_ += len;
+}
+
+/**
+ * @brief 从缓冲区中取出数据直到end
+ * @param end 数据结束位置
+ */
+void Buffer::RetrieveUntil(const char* end) {
+  assert(Peek() <= end);
+  Retrieve(end - Peek());
+}
+
+/**
+ * @brief 重置缓冲区
+ */
+void Buffer::RetrieveAll() {
+  bzero(&buffer_[0], buffer_.size());
+  readPos_ = 0;
+  writePos_ = 0;
+}
+
+/**
+ * @brief 重置缓冲区并返回字符串
+ */
+std::string Buffer::RetrieveAllToStr() {
+  std::string str(Peek(), ReadableBytes());
+  RetrieveAll();
+  return str;
+}
+
+/**
+ * @brief 添加数据
+ * @param str 字符串
+ */
+void Buffer::Append(const std::string& str) { Append(str.data(), str.length()); }
+
+/**
+ * @brief 添加数据
+ * @param str 字符串
+ * @param len 字符串长度
+ */
+void Buffer::Append(const char* str, size_t len) {
+  assert(str);
+  EnsureWriteable(len);
+  std::copy(str, str + len, BeginWrite());
+  HasWritten(len);
+}
+
+/**
+ * @brief 添加数据
+ * @param data 数据
+ * @param len 数据长度
+ */
+void Buffer::Append(const void* data, size_t len) {
+  assert(data);
+  Append(static_cast<const char*>(data), len);
+}
+
+/**
+ * @brief 添加数据
+ * @param buff 缓冲区
+ */
+void Buffer::Append(const Buffer& buff) { Append(buff.Peek(), buff.ReadableBytes()); }
+
+/**
+ * @brief 更新写指针
+ * @param len 更新长度
+ */
+void Buffer::HasWritten(size_t len) { writePos_ += len; }
+
+/**
+ * @brief 返回缓冲区头指针
+ */
+char* Buffer::BeginPtr_() { return &*buffer_.begin(); }
+
+/**
+ * @brief 返回缓冲区头指针
+ */
+const char* Buffer::BeginPtr_() const { return &*buffer_.begin(); }
+
+/**
+ * @brief 扩大缓冲区
+ * @param len 扩大的长度
+ */
+void Buffer::MakeSpace_(size_t len) {
+  if (WritableBytes() + PrependableBytes() < len) {
+    buffer_.resize(writePos_ + len + 1);
+  } else {
+    size_t readable = ReadableBytes();
+    std::copy(BeginPtr_() + readPos_, BeginPtr_() + writePos_, BeginPtr_());
+    readPos_ = 0;
+    writePos_ = readPos_ + readable;
+    assert(readable == ReadableBytes());
+  }
+}
+
+/**
+ * @brief 从fd中读取数据
+ * @param fd 文件描述符
+ * @param saveErrno 错误码
+*/
 ssize_t Buffer::ReadFd(int fd, int* saveErrno) {
   char buff[65535];
   struct iovec iov[2];
@@ -82,6 +175,11 @@ ssize_t Buffer::ReadFd(int fd, int* saveErrno) {
   return len;
 }
 
+/**
+ * @brief 向fd中写入数据
+ * @param fd 文件描述符
+ * @param saveErrno 错误码
+*/
 ssize_t Buffer::WriteFd(int fd, int* saveErrno) {
   size_t readSize = ReadableBytes();
   ssize_t len = write(fd, Peek(), readSize);
@@ -93,26 +191,4 @@ ssize_t Buffer::WriteFd(int fd, int* saveErrno) {
   return len;
 }
 
-char* Buffer::BeginPtr_() { return &*buffer_.begin(); }
 
-const char* Buffer::BeginPtr_() const { return &*buffer_.begin(); }
-
-void Buffer::MakeSpace_(size_t len) {
-  if (WritableBytes() + PrependableBytes() < len) {
-    buffer_.resize(writePos_ + len + 1);
-  } else {
-    size_t readable = ReadableBytes();
-    std::copy(BeginPtr_() + readPos_, BeginPtr_() + writePos_, BeginPtr_());
-    readPos_ = 0;
-    writePos_ = readPos_ + readable;
-    assert(readable == ReadableBytes());
-  }
-}
-
-// 这个缓冲区是如何实现增长的?
-// 1. 一开始初始化的时候，就给定了一个初始大小，这个大小是可以自己设置的
-// 2.
-// 当缓冲区的大小不够的时候，就会调用MakeSpace_()函数，这个函数会判断当前的缓冲区是否还有空间
-//    如果没有空间了，就会重新分配一个新的缓冲区，这个缓冲区的大小是原来的两倍
-// 3.
-// 如果缓冲区的大小足够的时候，就会直接将数据添加到缓冲区中，会先移动readPos_，然后再移动writePos_

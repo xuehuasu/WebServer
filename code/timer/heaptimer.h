@@ -13,49 +13,50 @@
 
 #include "../log/log.h"
 
-typedef std::function<void()> TimeoutCallBack;
-typedef std::chrono::high_resolution_clock Clock;
-typedef std::chrono::milliseconds MS;
-typedef Clock::time_point TimeStamp;
+typedef std::function<void()> TimeoutCallBack;      // 超时回调函数
+typedef std::chrono::high_resolution_clock Clock;   // 高精度时钟
+typedef std::chrono::milliseconds MS;              // 毫秒
+typedef Clock::time_point TimeStamp;               // 时间戳
 
-struct TimerNode {
-  int id;
-  TimeStamp expires;
-  TimeoutCallBack cb;
+struct TimerNode {      // 定时器节点
+  int id;               // 定时器id
+  TimeStamp expires;    // 超时时间
+  TimeoutCallBack cb;   // 超时回调函数
   bool operator<(const TimerNode& t) { return expires < t.expires; }
 };
+
 class HeapTimer {
- public:
-  HeapTimer() { heap_.reserve(64); }
+public:
+    HeapTimer() { heap_.reserve(64); }
 
-  ~HeapTimer() { clear(); }
+    ~HeapTimer() { clear(); }
 
-  void adjust(int id, int newExpires);
+    void adjust(int id, int newExpires);
 
-  void add(int id, int timeOut, const TimeoutCallBack& cb);
+    void add(int id, int timeOut, const TimeoutCallBack& cb);
 
-  void doWork(int id);
+    void doWork(int id);
 
-  void clear();
+    void clear();
 
-  void tick();
+    void tick();
 
-  void pop();
+    void pop();
 
-  int GetNextTick();
+    int GetNextTick();
 
- private:
-  void del_(size_t i);
+    private:
+    void del(size_t i);
 
-  void siftup_(size_t i);
+    void up(size_t i);
 
-  bool siftdown_(size_t index, size_t n);
+    bool down(size_t index);
 
-  void SwapNode_(size_t i, size_t j);
+    void swapNode(size_t i, size_t j);
 
-  std::vector<TimerNode> heap_;
+    std::vector<TimerNode> heap_;       // 堆数组
 
-  std::unordered_map<int, size_t> ref_;
+    std::unordered_map<int, int> ref_;  // fd到定时器节点的映射
 };
 
 #endif

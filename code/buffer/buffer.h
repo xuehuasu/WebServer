@@ -8,44 +8,114 @@
 #include <cstring>
 #include <iostream>
 #include <vector>
+
 class Buffer {
- public:
-  Buffer(int initBuffSize = 1024);
-  ~Buffer() = default;
+public:
+    Buffer(int initBuffSize = 1024);
+    ~Buffer() = default;
 
-  size_t WritableBytes() const;
-  size_t ReadableBytes() const;
-  size_t PrependableBytes() const;
+    /**
+     * @brief 可读字节数
+    */
+    size_t WritableBytes() const;
 
-  const char* Peek() const;
-  void EnsureWriteable(size_t len);
-  void HasWritten(size_t len);
+    /**
+     * @brief 可写字节数
+    */
+    size_t ReadableBytes() const;
 
-  void Retrieve(size_t len);
-  void RetrieveUntil(const char* end);
+    /**
+     * @brief 前置字节数
+    */
+    size_t PrependableBytes() const;
 
-  void RetrieveAll();
-  std::string RetrieveAllToStr();
+    /**
+     * @brief 返回缓冲区头指针
+    */
+    const char* Peek() const;
 
-  const char* BeginWriteConst() const;
-  char* BeginWrite();
+    /**
+     * @brief 确保缓冲区有足够的空间存放len个字节
+    */
+    void EnsureWriteable(size_t len);
 
-  void Append(const std::string& str);
-  void Append(const char* str, size_t len);
-  void Append(const void* data, size_t len);
-  void Append(const Buffer& buff);
+    /**
+     * @brief 更新写指针
+    */
+    void HasWritten(size_t len);
 
-  ssize_t ReadFd(int fd, int* Errno);
-  ssize_t WriteFd(int fd, int* Errno);
+    /**
+     * @brief 读取len个字节
+    */
+    void Retrieve(size_t len);
 
- private:
-  char* BeginPtr_();
-  const char* BeginPtr_() const;
-  void MakeSpace_(size_t len);
+    /**
+     * @brief 读取缓冲区中[begin, end)之间的数据
+    */
+    void RetrieveUntil(const char* end);
 
-  std::vector<char> buffer_;
-  std::atomic<std::size_t> readPos_;
-  std::atomic<std::size_t> writePos_;
+    /**
+     * @brief 重置缓冲区
+    */
+    void RetrieveAll();
+
+    /**
+     * @brief 重置缓冲区并返回字符串
+    */
+    std::string RetrieveAllToStr();
+
+    /**
+     * @brief 返回缓冲区头指针
+    */
+    const char* BeginWriteConst() const;
+
+    /**
+     * @brief 返回缓冲区头指针
+    */
+    char* BeginWrite();
+
+    /**
+     * @brief 添加字符串
+    */
+    void Append(const std::string& str);
+    void Append(const char* str, size_t len);
+    void Append(const void* data, size_t len);
+
+    /**
+     * @brief 添加缓冲区
+    */
+    void Append(const Buffer& buff);
+
+    /**
+     * @brief 从fd中读取数据
+    */
+    ssize_t ReadFd(int fd, int* Errno);
+
+    /**
+     * @brief 向fd中写入数据
+    */
+    ssize_t WriteFd(int fd, int* Errno);
+
+private:
+    /**
+     * @brief 返回缓冲区头指针
+    */
+    char* BeginPtr_();
+
+    /**
+     * @brief 返回缓冲区头指针
+    */
+    const char* BeginPtr_() const;
+
+    /**
+     * @brief 扩充缓冲区
+    */
+    void MakeSpace_(size_t len);
+
+private:
+    std::vector<char> buffer_; // 缓冲区
+    std::atomic<std::size_t> readPos_; // 读指针
+    std::atomic<std::size_t> writePos_; // 写指针
 };
 
 #endif

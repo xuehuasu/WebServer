@@ -15,75 +15,122 @@
 #include "blockqueue.h"
 
 class Log {
- public:
-  void init(int level, const char* path = "../log", const char* suffix = ".log",
-            int maxQueueCapacity = 1024);
+public:
+    /**
+     * @brief 初始化日志系统
+    */
+    void Init(int level, const char* path = "../log", const char* suffix = ".log",
+ int maxQueueCapacity = 1024);
+    
+    /**
+     * @brief 获取日志系统的单例
+    */
+    static Log* Instance();
 
-  static Log* Instance();
-  static void FlushLogThread();
+    /**
+     * @brief 刷新日志系统的线程
+    */
+    static void FlushLogThread();
 
-  void write(int level, const char* format, ...);
-  void flush();
+    /**
+     * @brief 写日志
+    */
+    void Write(int level, const char* format, ...);
 
-  int GetLevel();
-  void SetLevel(int level);
-  bool IsOpen() { return isOpen_; }
+    /**
+     * @brief 刷新日志
+    */
+    void Flush();
 
- private:
-  Log();
-  void AppendLogLevelTitle_(int level);
-  virtual ~Log();
-  void AsyncWrite_();
+    /**
+     * @brief 获取日志等级
+    */
+    int GetLevel();
 
- private:
-  static const int LOG_PATH_LEN = 256;
-  static const int LOG_NAME_LEN = 256;
-  static const int MAX_LINES = 50000;
+    /**
+     * @brief 设置日志等级
+    */
+    void SetLevel(int level);
 
-  const char* path_;
-  const char* suffix_;
+    /**
+     * @brief 判断日志系统是否开启
+    */
+    bool IsOpen() ;
 
-  int MAX_LINES_;
+private:
+    /**
+     * @brief 构造函数
+    */
+    Log();
 
-  int lineCount_;
-  int toDay_;
+    /**
+     * @brief 添加日志等级标题
+    */
+    void AppendLogLevelTitle_(int level);
 
-  bool isOpen_;
+    /**
+     * @brief 析构函数
+    */
+    virtual ~Log();
 
-  Buffer buff_;
-  int level_;
-  bool isAsync_;
+    /**
+     * @brief 异步写日志
+    */
+    void AsyncWrite_();
 
-  FILE* fp_;
-  std::unique_ptr<BlockDeque<std::string>> deque_;
-  std::unique_ptr<std::thread> writeThread_;
-  std::mutex mtx_;
+private:
+    static const int LOG_PATH_LEN = 256; // 日志路径长度
+    static const int LOG_NAME_LEN = 256; // 日志名称长度
+    static const int MAX_LINES = 50000;  // 最大行数
+
+    const char* path_;   // 日志路径
+    const char* suffix_; // 日志后缀
+
+    int MAX_LINES_; // 最大行数
+
+    int lineCount_; // 行数
+    int toDay_;     // 今天
+
+    bool isOpen_; // 是否开启
+
+    Buffer buff_; // 缓冲区
+    int level_;   // 日志等级
+    bool isAsync_; // 是否异步
+
+    FILE* fp_; // 文件指针
+    std::unique_ptr<BlockDeque<std::string>> deque_; // 阻塞队列
+    std::unique_ptr<std::thread> writeThread_; // 写日志的线程
+    std::mutex mtx_; // 互斥锁
 };
 
+/**
+ * @brief 日志宏定义
+*/
 #define LOG_BASE(level, format, ...)                 \
-  do {                                               \
-    Log* log = Log::Instance();                      \
-    if (log->IsOpen() && log->GetLevel() <= level) { \
-      log->write(level, format, ##__VA_ARGS__);      \
-      log->flush();                                  \
-    }                                                \
-  } while (0);
+    do {                                             \
+        Log* log = Log::Instance();                  \
+        if (log->IsOpen() && log->GetLevel() <= level) { \
+            log->Write(level, format, ##__VA_ARGS__); \
+            log->Flush();                            \
+        }                                            \
+    } while (0);
 
-#define LOG_DEBUG(format, ...)         \
-  do {                                 \
-    LOG_BASE(0, format, ##__VA_ARGS__) \
-  } while (0);
-#define LOG_INFO(format, ...)          \
-  do {                                 \
-    LOG_BASE(1, format, ##__VA_ARGS__) \
-  } while (0);
-#define LOG_WARN(format, ...)          \
-  do {                                 \
-    LOG_BASE(2, format, ##__VA_ARGS__) \
-  } while (0);
-#define LOG_ERROR(format, ...)         \
-  do {                                 \
-    LOG_BASE(3, format, ##__VA_ARGS__) \
-  } while (0);
+#define LOG_DEBUG(format, ...)              \
+    do {                                    \
+        LOG_BASE(0, format, ##__VA_ARGS__)  \
+    } while (0);
+#define LOG_INFO(format, ...)               \
+    do {                                    \
+        LOG_BASE(1, format, ##__VA_ARGS__)  \
+    } while (0);
+#define LOG_WARN(format, ...)               \
+    do {                                    \
+        LOG_BASE(2, format, ##__VA_ARGS__)  \
+    } while (0);
+#define LOG_ERROR(format, ...)              \
+    do {                                    \
+        LOG_BASE(3, format, ##__VA_ARGS__)  \
+    } while (0);
+
 
 #endif

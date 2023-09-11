@@ -20,49 +20,49 @@
 #include "epoller.h"
 
 class WebServer {
- public:
-  WebServer(int port, int trigMode, int timeoutMS, bool OptLinger, int sqlPort,
-            const char* sqlUser, const char* sqlPwd, const char* dbName, int connPoolNum,
-            int threadNum, bool openLog, int logLevel, int logQueSize);
+public:
+    WebServer(int port, int trigMode, int timeoutMS, bool OptLinger, int sqlPort,
+              const char* sqlUser, const char* sqlPwd, const char* dbName, int connPoolNum,
+              int threadNum, bool openLog, int logLevel, int logQueSize);
 
-  ~WebServer();
-  void Start();
+    ~WebServer();
+    void Start();
 
- private:
-  bool InitSocket_();
-  void InitEventMode_(int trigMode);
-  void AddClient_(int fd, sockaddr_in addr);
+private:
+    bool InitSocket_();                     // 初始化socket
+    void InitEventMode_(int trigMode);      // 初始化事件模式
+    void AddClient_(int fd, sockaddr_in addr);  // 添加客户端
 
-  void DealListen_();
-  void DealWrite_(HttpConn* client);
-  void DealRead_(HttpConn* client);
+    void DealListen_();                     // 处理监听事件
+    void DealWrite_(HttpConn* client);      // 处理写事件
+    void DealRead_(HttpConn* client);       // 处理读事件
 
-  void SendError_(int fd, const char* info);
-  void ExtentTime_(HttpConn* client);
-  void CloseConn_(HttpConn* client);
+    void SendError_(int fd, const char* info);  // 发送错误信息
+    void ExtentTime_(HttpConn* client);         // 延长超时时间
+    void CloseConn_(HttpConn* client);          // 关闭连接
 
-  void OnRead_(HttpConn* client);
-  void OnWrite_(HttpConn* client);
-  void OnProcess(HttpConn* client);
+    void OnRead_(HttpConn* client);             // 读事件处理
+    void OnWrite_(HttpConn* client);            // 写事件处理
+    void OnProcess_(HttpConn* client);          // 处理请求
 
-  static const int MAX_FD = 65536;
+    static int SetFdNonblock(int fd);           // 设置文件描述符非阻塞
 
-  static int SetFdNonblock(int fd);
+    static const int MAX_FD = 65536;            // 最大文件描述符数量
+    int port_;                                  // 端口号
+    bool openLinger_;                           // 是否开启优雅关闭
+    int timeoutMS_;                             // 超时时间
+    bool isClose_;                              // 是否关闭
+    int listenFd_;                              // 监听的文件描述符
+    char* srcDir_;                              // 资源目录
 
-  int port_;
-  bool openLinger_;
-  int timeoutMS_; /* 毫秒MS */
-  bool isClose_;
-  int listenFd_;
-  char* srcDir_;  //
+    uint32_t listenEvent_;                      // 监听的文件描述符的事件
+    uint32_t connEvent_;                        // 连接的文件描述符的事件
 
-  uint32_t listenEvent_;  // 监听的文件描述符的事件
-  uint32_t connEvent_;    // 连接的文件描述符的事件
+    std::unique_ptr<HeapTimer> timer_;          // 堆定时器
+    std::unique_ptr<ThreadPool> threadpool_;    // 线程池
+    std::unique_ptr<Epoller> epoller_;          // 事件处理对象
+    std::unordered_map<int, HttpConn> users_;   // 用户信息
 
-  std::unique_ptr<HeapTimer> timer_;         // 定时器
-  std::unique_ptr<ThreadPool> threadpool_;   // 线程池对象
-  std::unique_ptr<Epoller> epoller_;         // 事件处理对象
-  std::unordered_map<int, HttpConn> users_;  // 客户端信息
 };
 
-#endif  // WEBSERVER_H
+#endif

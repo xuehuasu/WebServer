@@ -22,7 +22,8 @@ cd bin
 ```
 
 ## 压力测试
-![image-webbench](https://github.com/xuehuasu/xuehuasu/blob/f6224d094255ecde0e3bf0c607ab59a7d22a67ab/picture/WebServer/image-webbench.png)
+![image](https://github.com/xuehuasu/WebServer/assets/81012806/deeae76b-c3e4-46eb-8b7e-3d4f254e67df)
+
 ```bash
 ./webbench-1.5/webbench -c clientNum -t Time http://ip:port/
 ```
